@@ -15,6 +15,8 @@ class SoccerBallTracker:
         self.object_top = 0
         self.object_width = 0
         self.object_height = 0
+        self.tracker = cv2.TrackerCSRT_create()
+        self.tracking_ok = False
 
         classes_file = "./coco.names"
         self.classes = None
@@ -66,12 +68,26 @@ class SoccerBallTracker:
         return None
 
     def detect_and_track(self, img):
-        box = self.detect_yolo(img)
+        is_detecting = False
+        if (self.frameNumber % 10 == 0) or (not self.tracking_ok):
+            bbox = self.detect_yolo(img)
+            if bbox is not None:
+                is_detecting = True
+                self.tracker = cv2.TrackerCSRT_create()
+                self.tracking_ok = self.tracker.init(img, tuple(bbox))
+                self.tracking_ok, _ = self.tracker.update(img)
+            else:
+                self.tracking_ok, bbox = self.tracker.update(img)
+        else:
+            self.tracking_ok, bbox = self.tracker.update(img)
+        bbox = list(bbox)
+
         self.frameNumber += 1
-        if box is not None:
-            return box
-        # TODO add tracking
-        return [0, 0, 0, 0]
+        if bbox is not None:
+            result = bbox
+            result.append(is_detecting)
+            return result
+        return [0, 0, 0, 0, is_detecting]
 
     def return_new_bounding_box(self, frame):
         self.detect_and_track(frame)
@@ -93,8 +109,15 @@ if __name__ == "__main__":
     while True:
         ret, frame = cap.read()
         if frame is not None:
-            left, top, width, height = soccer_tracker.detect_and_track(frame)
-            result = cv2.rectangle(frame, (left, top), (left+width, top+height), (255, 178, 50), 3)
+            left, top, width, height, is_detecting = soccer_tracker.detect_and_track(frame)
+            top = int(top)
+            left = int(left)
+            width = int(width)
+            height = int(height)
+            if is_detecting:
+                result = cv2.rectangle(frame, (left, top), (left + width, top + height), (0, 0, 255), 3)
+            else:
+                result = cv2.rectangle(frame, (left, top), (left + width, top + height), (255, 178, 50), 3)
             cv2.imshow('frame', result)
         else:
             break
