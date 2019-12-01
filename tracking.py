@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import math
+import time
+import matplotlib.pyplot as plt
 
 
 class SoccerBallTracker:
@@ -106,10 +109,23 @@ if __name__ == "__main__":
     soccer_tracker = SoccerBallTracker()
 
     cap = cv2.VideoCapture('soccer-ball.mp4')
+    fps = math.ceil(cap.get(cv2.CAP_PROP_FPS))
+    print(fps)
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+
+    # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
+    out = cv2.VideoWriter('result.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (frame_width, frame_height))
+    fps_log = []
     while True:
         ret, frame = cap.read()
         if frame is not None:
+            t1 = time.time()
             left, top, width, height, is_detecting = soccer_tracker.detect_and_track(frame)
+            t2 = time.time()
+            current_fps = 1 / (t2 - t1)
+            fps_log.append(current_fps)
+
             top = int(top)
             left = int(left)
             width = int(width)
@@ -118,6 +134,9 @@ if __name__ == "__main__":
                 result = cv2.rectangle(frame, (left, top), (left + width, top + height), (0, 0, 255), 3)
             else:
                 result = cv2.rectangle(frame, (left, top), (left + width, top + height), (255, 178, 50), 3)
+            cv2.putText(result, "FPS: " + str(round(current_fps,2)), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255),
+                        lineType=cv2.LINE_AA)
+            out.write(np.uint8(result))
             cv2.imshow('frame', result)
         else:
             break
@@ -125,3 +144,8 @@ if __name__ == "__main__":
             break
     cap.release()
     cv2.destroyAllWindows()
+    plt.plot(fps_log)
+    plt.ylabel('fps')
+    plt.xlabel('frame')
+    plt.title('fps during detection and tracking')
+    plt.show()
