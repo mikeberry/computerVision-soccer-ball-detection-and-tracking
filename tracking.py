@@ -71,6 +71,7 @@ class SoccerBallTracker:
         return None
 
     def detect_and_track(self, img):
+        #TODO reset frame number after detection
         is_detecting = False
         if (self.frameNumber % 10 == 0) or (not self.tracking_ok):
             bbox = self.detect_yolo(img)
@@ -134,8 +135,8 @@ if __name__ == "__main__":
                 result = cv2.rectangle(frame, (left, top), (left + width, top + height), (0, 0, 255), 3)
             else:
                 result = cv2.rectangle(frame, (left, top), (left + width, top + height), (255, 178, 50), 3)
-            cv2.putText(result, "FPS: " + str(round(current_fps,2)), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255),
-                        lineType=cv2.LINE_AA)
+            cv2.putText(result, "FPS: " + str(round(current_fps, 2)), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.0,
+                        (0, 0, 255), lineType=cv2.LINE_AA)
             out.write(np.uint8(result))
             cv2.imshow('frame', result)
         else:
